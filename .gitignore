@@ -1,2 +1,5 @@
 # binaries, make your own!
 build/
+
+# Reference, code that's just for easy looking at when writing assembly, too big too include
+reference/

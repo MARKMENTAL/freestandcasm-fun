@@ -53,12 +53,37 @@ ls -lh hello-world
 size hello-world
 
 ------------------------------
+## 📂 Example: /proc traversal (`proc-top3`)
+`proc-top3.c` demonstrates a slightly more complex freestanding program: it opens `/proc` with `openat`, walks process directories with `getdents64`, reads each PID's `/proc/<pid>/stat` and `/proc/<pid>/status`, and prints a tiny ASCII table of the three longest-running processes sorted by cumulative CPU time.
+
+Build and run it with the included helper:
+
+```bash
+./compile-proc-top3.sh
+./build/proc-top3
+```
+
+Example output:
+
+```
+PID      NAME            CPU (ticks)       RAM (bytes)
+-------  --------------  ----------------  ----------------
+   3221  firefox-esr               195695         846217216
+   2239  kwin_wayland                   46919         410013696
+   4670  chrome                     37461         540106752
+```
+
+Like `hello-world.c`, it has no libc dependency, uses architecture-specific inline-asm syscall wrappers, and keeps the binary under a few kilobytes.
+
+------------------------------
+
 ## 🎓 Learning Objectives: Master the Lifecycle
 This repository serves as an interactive guide to exploring how the kernel manages running processes:
 
    1. Context Switching: Watch how the CPU flips execution rings from user mode to kernel space when striking ASM_TRAP.
-   2. Register Allocation: Learn how extended inline assembly constraints ("r", "memory") direct the compiler to map local C variables into raw hardware registers without memory corruption.
+   2. Register Allocation: Learn how extended inline assembly constraints ("r", "memory") direct the compiler to map local variables into raw hardware registers without memory corruption.
    3. Subreaping and Signals: See the exact foundational code layout used to build lightweight container tools (like the sub-5KB tuxreaperd micro-init daemon) to trap signals and handle child execution tracking directly from a clean slate.
+   4. Filesystem Traversal: Use raw directory syscalls (`openat` + `getdents64`) to inspect the kernel's live process table without any standard library helpers.
 
 
 
