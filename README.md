@@ -1,8 +1,10 @@
 ## freestandcasm-fun
+
 An interactive sandbox demonstrating how to write cross-architecture, ultra-tiny binaries using freestanding C and raw inline assembly macros. This repository bypasses the standard C runtime (libc) entirely, providing a direct portal to the Linux kernel.
 It is designed for systems engineers, developers, and hobbyists who want to practically learn the Linux ABI, CPU register manipulation, and the core application lifecycle.
 ------------------------------
 ## 🏛️ The Architecture
+
 In a standard application stack, execution jumps through multiple layers of middleware:
 Your Code ➔ Standard Library (glibc/musl) ➔ System Call Wrapper ➔ Linux Kernel
 This repository cuts out the middleware to talk directly to the CPU and kernel scheduler:
@@ -12,6 +14,8 @@ By discarding runtime setup wrappers, exception handling tables, and dynamic lin
 ## 🔄 Multi-Architecture Macro Abstraction
 Linux system call numbers and hardware trap instructions differ completely between processor architectures. This project utilizes the C preprocessor as a zero-overhead macro-templating engine to resolve these variations seamlessly at compile time.
 
+
+```c
 #if defined(__x86_64__)
     #define REG_SYS    "rax"
     #define REG_ARG1   "rdi"
@@ -29,28 +33,41 @@ Linux system call numbers and hardware trap instructions differ completely betwe
     #define ASM_TRAP   "svc #0"
     #define SYS_WRITE  64
     #define SYS_WAIT4  260
-    #define SYS_EXIT   93#endif
-
+    #define SYS_EXIT   93
+#endif
+```
 ------------------------------
 
 ## ⚡ The Binary Optimization Pipeline
 To strip out default ELF metadata padding, asynchronous stack unwind data, and cryptographic build hashes, compile using this targeted configuration:
 
 # Define your platform's native memory page size boundary
+
+```
 page_size=4096
+```
 # Compile with strict hardware alignment flags
+
+```
 gcc -nostdlib -static -fno-stack-protector -fno-asynchronous-unwind-tables \
     -fno-builtin -O2 -s -Wl,--build-id=none -Wl,-z,noseparate-code \
     -Wl,-z,max-page-size=${page_size} \
     -Wall -Wextra hello-world.c -o hello-world
+```
 
 ## 🔬 Inspection Tools
 Verify the absolute minimization of your hardware footprint:
 
 # Read the physical file footprint
+
+```
 ls -lh hello-world
+```
 # Inspect internal segment sections
+
+```
 size hello-world
+```
 
 ------------------------------
 ## 📂 Example: /proc traversal (`proc-top3`)
