@@ -15,7 +15,7 @@
 #endif
 
 // ----------------------------------------------------------------------------
-// Raw syscall wrappers (style matches reference/tuxreaperdasm.c)
+// Raw syscall wrappers 
 // ----------------------------------------------------------------------------
 
 #if defined(__x86_64__)

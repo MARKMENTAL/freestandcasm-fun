@@ -40,7 +40,7 @@
 #define O_RDONLY      0
 
 // ----------------------------------------------------------------------------
-// Raw syscall wrappers (style matches reference/tuxreaperdasm.c)
+// Raw syscall wrappers
 //
 // Each wrapper is a minimal portal to the kernel:
 //   openat  -> handshake: resolve a path and receive a file descriptor.
