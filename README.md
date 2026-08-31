@@ -1,19 +1,28 @@
-## freestandcasm-fun
+# freestandcasm-fun
 
 An interactive sandbox demonstrating how to write cross-architecture, ultra-tiny binaries using freestanding C and raw inline assembly macros. This repository bypasses the standard C runtime (libc) entirely, providing a direct portal to the Linux kernel.
+
 It is designed for systems engineers, developers, and hobbyists who want to practically learn the Linux ABI, CPU register manipulation, and the core application lifecycle.
-------------------------------
-## 🏛️ The Architecture
+
+---
+
+## 🏛 The Architecture
 
 In a standard application stack, execution jumps through multiple layers of middleware:
-Your Code ➔ Standard Library (glibc/musl) ➔ System Call Wrapper ➔ Linux Kernel
-This repository cuts out the middleware to talk directly to the CPU and kernel scheduler:
-Your Code ➔ Extended Inline Assembly ➔ CPU Instruction (syscall / svc #0) ➔ Linux Kernel
-By discarding runtime setup wrappers, exception handling tables, and dynamic linking hooks, binaries in this repository compile down to a pristine layout of under 600 bytes (fitting within a fraction of a single hardware memory page).
-------------------------------
-## 🔄 Multi-Architecture Macro Abstraction
-Linux system call numbers and hardware trap instructions differ completely between processor architectures. This project utilizes the C preprocessor as a zero-overhead macro-templating engine to resolve these variations seamlessly at compile time.
 
+`Your Code` ➔ `Standard Library (glibc/musl)` ➔ `System Call Wrapper` ➔ `Linux Kernel`
+
+This repository cuts out the middleware to talk directly to the CPU and kernel scheduler:
+
+`Your Code` ➔ `Extended Inline Assembly` ➔ `CPU Instruction (syscall / svc #0)` ➔ `Linux Kernel`
+
+By discarding runtime setup wrappers, exception handling tables, and dynamic linking hooks, binaries in this repository compile down to a pristine layout of under 600 bytes (fitting within a fraction of a single hardware memory page).
+
+---
+
+## 🔄 Multi-Architecture Macro Abstraction
+
+Linux system call numbers and hardware trap instructions differ completely between processor architectures. This project utilizes the C preprocessor as a zero-overhead macro-templating engine to resolve these variations seamlessly at compile time.
 
 ```c
 #if defined(__x86_64__)
