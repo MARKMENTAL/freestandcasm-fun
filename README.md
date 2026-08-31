@@ -1,5 +1,5 @@
 ## freestandcasm-fun
-An interactive sandbox demonstrating how to write cross-platform, ultra-tiny binaries using freestanding C and raw inline assembly macros. This repository bypasses the standard C runtime (libc) entirely, providing a direct portal to the Linux kernel.
+An interactive sandbox demonstrating how to write cross-architecture, ultra-tiny binaries using freestanding C and raw inline assembly macros. This repository bypasses the standard C runtime (libc) entirely, providing a direct portal to the Linux kernel.
 It is designed for systems engineers, developers, and hobbyists who want to practically learn the Linux ABI, CPU register manipulation, and the core application lifecycle.
 ------------------------------
 ## 🏛️ The Architecture
