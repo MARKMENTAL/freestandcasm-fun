@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Set your page size variable
 page_size=4096
 

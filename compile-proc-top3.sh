@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Build the proc-top3 freestanding example.
 page_size=4096
 
