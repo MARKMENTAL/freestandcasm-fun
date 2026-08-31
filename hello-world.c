@@ -1,53 +1,89 @@
-// 1. Architecture-Specific Register and Syscall Definitions
+// Freestanding "Hello, world!" example.
+//
+// This program bypasses the C runtime entirely and uses raw inline assembly
+// to invoke the Linux write and exit syscalls directly. It works on both
+// x86_64 (syscall instruction) and aarch64 (svc #0).
+
 #if defined(__x86_64__)
-    #define REG_SYS    "rax"
-    #define REG_ARG1   "rdi"
-    #define REG_ARG2   "rsi"
-    #define REG_ARG3   "rdx"
-    #define ASM_TRAP   "syscall"
     #define SYS_WRITE  1
     #define SYS_EXIT   60
 #elif defined(__aarch64__)
-    #define REG_SYS    "x8"
-    #define REG_ARG1   "x0"
-    #define REG_ARG2   "x1"
-    #define REG_ARG3   "x2"
-    #define ASM_TRAP   "svc #0"
     #define SYS_WRITE  64
     #define SYS_EXIT   93
+#else
+    #error "Unsupported architecture: only x86_64 and aarch64 are supported"
 #endif
 
-// 2. Freestanding Assembly Macro Templates using C
-#define KERNEL_PORTAL_WRITE(fd, buf, count)                       \
-    __asm__ __volatile__(                                         \
-        "mov %0, %%" REG_SYS "\n\t"                               \
-        "mov %1, %%" REG_ARG1 "\n\t"                              \
-        "mov %2, %%" REG_ARG2 "\n\t"                              \
-        "mov %3, %%" REG_ARG3 "\n\t"                              \
-        ASM_TRAP                                                  \
-        :                                                         \
-        : "r"((long)SYS_WRITE), "r"((long)fd), "r"(buf), "r"((long)count) \
-        : REG_SYS, REG_ARG1, REG_ARG2, REG_ARG3, "memory"         \
-    )
+// ----------------------------------------------------------------------------
+// Raw syscall wrappers (style matches reference/tuxreaperdasm.c)
+// ----------------------------------------------------------------------------
 
-#define KERNEL_PORTAL_EXIT(status)                                \
-    __asm__ __volatile__(                                         \
-        "mov %0, %%" REG_SYS "\n\t"                               \
-        "mov %1, %%" REG_ARG1 "\n\t"                              \
-        ASM_TRAP                                                  \
-        :                                                         \
-        : "r"((long)SYS_EXIT), "r"((long)status)                  \
-        : REG_SYS, REG_ARG1, "memory"                             \
-    )
+#if defined(__x86_64__)
 
-// 3. Application Entry Point (Bypassing main() and libc)
-void _start(void) {
-    const char msg[] = "Hello, world!\n";
-    
-    // Write message to stdout (file descriptor 1)
-    KERNEL_PORTAL_WRITE(1, msg, sizeof(msg) - 1);
-    
-    // Exit cleanly with status code 0
-    KERNEL_PORTAL_EXIT(0);
+static inline long sys_write(int fd, const void *buf, long n) {
+    long ret;
+    __asm__ volatile (
+        "syscall"
+        : "=a"(ret)
+        : "a"(SYS_WRITE), "D"((long)fd), "S"(buf), "d"(n)
+        : "rcx", "r11", "memory"
+    );
+    return ret;
 }
 
+// Kernel entry point. The initial stack may not be 16-byte aligned, so we
+// align it before calling C code, then exit cleanly with status 0.
+__asm__(
+    ".text\n"
+    ".globl _start\n"
+    "_start:\n"
+    "    xorl %ebp, %ebp\n"
+    "    andq $-16, %rsp\n"        /* align stack */
+    "    call hello_main\n"
+    "    xorl %edi, %edi\n"         /* exit status 0 */
+    "    movq $60, %rax\n"         /* sys_exit */
+    "    syscall\n"
+);
+
+#elif defined(__aarch64__)
+
+static inline long sys_write(int fd, const void *buf, long n) {
+    register long x0 __asm__("x0") = fd;
+    register long x1 __asm__("x1") = (long)buf;
+    register long x2 __asm__("x2") = n;
+    register long x8 __asm__("x8") = SYS_WRITE;
+    __asm__ volatile (
+        "svc #0"
+        : "+r"(x0)
+        : "r"(x1), "r"(x2), "r"(x8)
+        : "memory", "cc"
+    );
+    return x0;
+}
+
+// aarch64 kernel entry point: align the stack, call hello_main, then exit.
+__asm__(
+    ".text\n"
+    ".globl _start\n"
+    "_start:\n"
+    "    mov x4, sp\n"
+    "    bic x4, x4, #15\n"      /* align stack */
+    "    mov sp, x4\n"
+    "    bl hello_main\n"
+    "    mov x0, #0\n"           /* exit status 0 */
+    "    mov x8, #93\n"          /* sys_exit */
+    "    svc #0\n"
+);
+
+#endif
+
+// ----------------------------------------------------------------------------
+// Application logic called by the per-arch asm _start
+// ----------------------------------------------------------------------------
+
+void hello_main(void) {
+    static const char msg[] = "Hello, world!\n";
+
+    // Write message to stdout (file descriptor 1)
+    sys_write(1, msg, (long)(sizeof(msg) - 1));
+}
